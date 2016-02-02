@@ -59,7 +59,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon=0.1,
     for p in range(npass):
         # print status information
         if verbose:
-            print('pass %d:' % (p,))
+            print('pass %d:' % (p+1,))
         
         # loop over sites (data points)
         for dind in range(N):
@@ -76,7 +76,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon=0.1,
                 cholesky(cov_c)
             except LinAlgError:
                 raise LinAlgError('Covariance of the cavity distribution' + 
-                                  'for site %d\n' % (dind,) + 
+                                  'for site %d ' % (dind,) + 
                                   'is probably not positive definite' +
                                   'in pass %d!' % (p,))
             else:
@@ -88,7 +88,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon=0.1,
                 # loop for simulations
                 for s in range(math.ceil(samplemax / samplestep)):
                     # determine how many samples you need to get
-                    S = np.min(samplemax - s * samplestep, samplestep)
+                    S = np.min([samplemax - s * samplestep, samplestep])
                     
                     # sample from cavity distribution
                     parsamples = mvnrand(mean_c, cov_c, S, Halton_seq)
@@ -112,47 +112,51 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon=0.1,
                         break
                 
                 samples = samples[:nacc[p, dind], :]
-                ntotal[p, dind] = np.min(samplemax, (s+1) * samplestep)
+                ntotal[p, dind] = np.min([samplemax, (s+1) * samplestep])
                 
-                # get mean and covariance of accepted samples
-                mean_new = np.mean(samples, axis=0)
-                cov_new = np.cov(samples, rowvar=0)
+                if nacc[p, dind] < P:
+                    warn('Skipping site %d in pass %d, ' % (dind, p) + 
+                         'because the number of accepted samples was ' + 
+                         'smaller than the number of parameters.')
+                else:
+                    # get mean and covariance of accepted samples
+                    mean_new = np.mean(samples, axis=0)
+                    cov_new = np.cov(samples, rowvar=0)
+                    
+                    if nacc[p, dind] < minacc:
+                        warn('The minimum number of accepted samples was not ' + 
+                             'reached for site %d in pass %d (%d accepted)' % (dind, p, nacc[p, dind]) + 
+                             'Continuing anyway, but checking for positive ' + 
+                             'definiteness of estimated covariance. Error ' + 
+                             'may follow.', RuntimeWarning)
+                        # raises LinAlgError if cov_new is not positive definite
+                        cholesky(cov_new)
+                             
+                    # get new natural parameters
+                    r_new, Q_new = Gauss2exp(mean_new, cov_new)
+                    
+                    # partially update hybrid distribution parameters
+                    Q = alpha * Q_new + (1-alpha) * Q;
+                    r = alpha * r_new + (1-alpha) * r;
+                    
+                    # update log normalisation constant for site
+                    accratio = nacc[p, dind] / ntotal[p, dind]
+                    logC[dind] = ( math.log(accratio) - logZexp(r, Q) + 
+                                   logZexp(r_c, Q_c) );
+                    
+                    # update current site
+                    rl[dind, :] = r - r_c;
+                    Ql[dind, :, :] = Q - Q_c;
                 
-                if nacc < minacc:
-                    warn('The minimum number of accepted samples was not ' + 
-                         'reached for:\nsite %d in pass %d\n' % (dind, p) + 
-                         'Continuing anyway, but checking for positive ' + 
-                         'definiteness\nof estimated covariance. Error ' + 
-                         'may follow.', RuntimeWarning)
-                    # raises LinAlgError if cov_new is not positive definite
-                    cholesky(cov_new)
-                         
-                # get new natural parameters
-                r_new, Q_new = Gauss2exp(mean_new, cov_new)
-                
-                # partially update hybrid distribution parameters
-                Q = alpha * Q_new + (1-alpha) * Q;
-                r = alpha * r_new + (1-alpha) * r;
-                
-                # update log normalisation constant for site
-                # THERE MIGHT BE SOME ISSUE WITH TRANSPOSES HERE: validate that r is 1D!
-                accratio = nacc[p, dind] / ntotal[p, dind]
-                logC[dind] = ( math.log(accratio) - logZexp(r, Q) + 
-                               logZexp(r_c, Q_c) );
-                
-                # update current site
-                rl[dind, :] = r - r_c;
-                Ql[dind, :, :] = Q - Q_c;
-                
-            if verbose and ( math.floor((dind-1) / N * 100) < 
-                             math.floor(dind / N * 100) ):
-                print('%3d%% completed' % math.floor(dind / N * 100));
+            if verbose and ( math.floor(dind / N * 100) < 
+                             math.floor((dind+1) / N * 100) ):
+                print('%3d%% completed' % math.floor((dind+1) / N * 100));
 
     mean_pos, cov_pos = exp2Gauss(r, Q)
     
     logml = np.sum(logC) + logZexp(r, Q) - logZprior - np.sum(np.log(veps));
     
-    return mean_pos, cov_pos, logml
+    return mean_pos, cov_pos, logml, nacc, ntotal
 
 def Gauss2exp(mean, cov):
     Q = inv(cov)
