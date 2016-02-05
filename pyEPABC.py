@@ -125,7 +125,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon=0.1,
                     
                     if nacc[p, dind] < minacc:
                         warn('The minimum number of accepted samples was not ' + 
-                             'reached for site %d in pass %d (%d accepted)' % (dind, p, nacc[p, dind]) + 
+                             'reached for site %d in pass %d (%d accepted). ' % (dind, p+1, nacc[p, dind]) + 
                              'Continuing anyway, but checking for positive ' + 
                              'definiteness of estimated covariance. Error ' + 
                              'may follow.', RuntimeWarning)
