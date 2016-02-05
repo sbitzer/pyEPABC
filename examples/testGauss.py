@@ -2,6 +2,8 @@
 
 # estimating the mean of a Gaussian from independent data given a Gaussian 
 # prior on the mean
+import sys
+sys.path.append( ".." )
 
 import numpy as np
 from numpy.linalg import inv
@@ -11,7 +13,7 @@ from scipy.special import gamma
 from pyEPABC import run_EPABC
 
 if __name__ == "__main__":
-    D = 2
+    D = 4
     
     prior_mean = np.zeros(D)
     prior_cov = np.diag(np.full(D, 4.5 ** 2))
@@ -47,7 +49,7 @@ if __name__ == "__main__":
     distfun = lambda dat, sims: np.linalg.norm(dat - sims, axis=1)
     
     # allowable distance
-    epsilon = 0.5
+    epsilon = 2
     
     # this is a correction term used for the computation of the marginal
     # likelihood; it is the normalising constant of a uniform distribution
@@ -56,5 +58,5 @@ if __name__ == "__main__":
     veps = np.pi ** (D/2) / gamma(D/2 + 1) * epsilon ** D;
     
     ep_mean, ep_cov, ep_logml, nacc, ntotal = run_EPABC(data, simfun, distfun, 
-        prior_mean, prior_cov, epsilon=epsilon, minacc=1000, samplestep=100000, 
+        prior_mean, prior_cov, epsilon=epsilon, minacc=500, samplestep=100000, 
         samplemax=20000000, npass=4, alpha=0.3, veps=veps)
