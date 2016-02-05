@@ -1,2 +1,7 @@
 .spyderproject
 __pycache__
+*build
+examples/Debug
+examples/.project
+examples/.cproject
+*.so
