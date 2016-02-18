@@ -166,11 +166,22 @@ if __name__ == "__main__":
         fillpar(paramtransform(parsamples)), dind, 
         data.values[:, 0].astype(dtype=int))
     
+    # maximum distance allowed for accepting samples, note that for 
+    # response_dist this is in units of RT
+    epsilon = 0.05
+    
+    # normalising constant of the uniform distribution defined by distfun and 
+    # epsilon; for response_dist this is: (2*epsilon for the Euclidean distance 
+    # between true and sampled RT and another factor of 2 for the two possible 
+    # responses - timed out responses don't occur here, because they are only a
+    # point mass, i.e., one particular value of response and RT)
+    veps = 2 * 2 * epsilon
+    
     # run EPABC
     ep_mean, ep_cov, ep_logml, nacc, ntotal = run_EPABC(data.values[:, 1:], 
-        simfun, response_dist, prior_mean, prior_cov, epsilon=0.05, 
+        simfun, response_dist, prior_mean, prior_cov, epsilon=epsilon, 
         minacc=500, samplestep=10000, samplemax=2000000, npass=3, alpha=0.3, 
-        veps=1)
+        veps=veps)
     
     # sample from EPABC posterior
     samples_pos = np.random.multivariate_normal(ep_mean, ep_cov, N)

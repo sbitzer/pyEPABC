@@ -54,7 +54,7 @@ if __name__ == "__main__":
     # this is a correction term used for the computation of the marginal
     # likelihood; it is the normalising constant of a uniform distribution
     # defined by the distance and epsilon, for the Euclidean distance above it
-    # is (according to Barthelme2014):
+    # is the volume of a Euclidean ball with radius epsilon:
     veps = np.pi ** (D/2) / gamma(D/2 + 1) * epsilon ** D;
     
     ep_mean, ep_cov, ep_logml, nacc, ntotal = run_EPABC(data, simfun, distfun, 
