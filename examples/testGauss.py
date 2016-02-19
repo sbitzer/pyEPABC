@@ -57,6 +57,6 @@ if __name__ == "__main__":
     # is the volume of a Euclidean ball with radius epsilon:
     veps = np.pi ** (D/2) / gamma(D/2 + 1) * epsilon ** D;
     
-    ep_mean, ep_cov, ep_logml, nacc, ntotal = run_EPABC(data, simfun, distfun, 
-        prior_mean, prior_cov, epsilon=epsilon, minacc=500, samplestep=100000, 
-        samplemax=20000000, npass=4, alpha=0.3, veps=veps)
+    ep_mean, ep_cov, ep_logml, nacc, ntotal, runtime = run_EPABC(data, simfun, 
+        distfun, prior_mean, prior_cov, epsilon=epsilon, minacc=500, 
+        samplestep=100000, samplemax=20000000, npass=4, alpha=0.3, veps=veps)

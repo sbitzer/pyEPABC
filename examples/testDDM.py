@@ -122,6 +122,10 @@ if __name__ == "__main__":
         B = 20
         model.sample(S, burn=B)
         
+        # for some reason the HDDM progress print does not print a new line at
+        # the end, so print it here
+        print('')
+        
         hddmsamples = get_hddm_posterior_samples(model, parnames)
         samples = samples.append(hddmsamples.iloc[np.linspace(0, S-B-1, N, 
             dtype=int)], ignore_index=True)
@@ -178,10 +182,10 @@ if __name__ == "__main__":
     veps = 2 * 2 * epsilon
     
     # run EPABC
-    ep_mean, ep_cov, ep_logml, nacc, ntotal = run_EPABC(data.values[:, 1:], 
-        simfun, response_dist, prior_mean, prior_cov, epsilon=epsilon, 
-        minacc=500, samplestep=10000, samplemax=2000000, npass=3, alpha=0.3, 
-        veps=veps)
+    ep_mean, ep_cov, ep_logml, nacc, ntotal, runtime = run_EPABC(
+        data.values[:, 1:], simfun, response_dist, prior_mean, prior_cov, 
+        epsilon=epsilon, minacc=500, samplestep=10000, samplemax=2000000, 
+        npass=3, alpha=0.3, veps=veps)
     
     # sample from EPABC posterior
     samples_pos = np.random.multivariate_normal(ep_mean, ep_cov, N)

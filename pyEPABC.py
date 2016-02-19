@@ -10,6 +10,7 @@ import numpy as np
 from numpy.linalg import slogdet, solve, cholesky, inv, LinAlgError
 from scipy.stats import norm
 from warnings import warn
+from datetime import datetime
 
 def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon, 
               npass=2, minacc=300, samplemax=1000000, samplestep=5000, 
@@ -70,6 +71,8 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
         number of accepted samples for each step
     ntotal : 2D numpy array; `npass`, N = shape
         total number of samples for each step
+    runtime : timedelta
+        total runtime of function as timedelta object
         
     Other Parameters
     ----------------
@@ -179,6 +182,10 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
        https://doi.org/10.1080/01621459.2013.864178
     """
 
+
+    # record start time
+    starttime = datetime.now()
+
     # number of sites (data points) x dimensionality of data points
     N, D = data.shape
     # number of parameters
@@ -211,19 +218,22 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
     
     # initialise Halton sequence, if desired
     if doQMC:
+        if verbose:
+            print('Creating Gaussian Halton sequence ... ', end='', flush=True)
+        
         # get original Halton sequence in unit-cuboid (uniform in [0,1])
         Halton_seq = create_Halton_sequence(samplestep, P)
         
         # transform to samples from standard normal
         Halton_seq = norm.ppf(Halton_seq)
+        
+        if verbose:
+            print('done.')
     else:
         Halton_seq = None
     
     # outer loop over passes
     for p in range(npass):
-        # print status information
-        if verbose:
-            print('pass %d:' % (p+1,))
         
         # loop over sites (data points)
         for dind in range(N):
@@ -312,15 +322,25 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
                     rl[dind, :] = r - r_c;
                     Ql[dind, :, :] = Q - Q_c;
                 
+            # print status information
             if verbose and ( math.floor(dind / N * 100) < 
                              math.floor((dind+1) / N * 100) ):
-                print('%3d%% completed' % math.floor((dind+1) / N * 100));
+                print('\rpass %d/%d: %3d%% completed' % (p+1, npass, 
+                    math.floor((dind+1) / N * 100)), end='');
+                
+        if verbose:
+            # finish line by printing \n
+            print('')
 
     mean_pos, cov_pos = exp2Gauss(r, Q)
     
     logml = np.sum(logC) + logZexp(r, Q) - logZprior - np.sum(np.log(veps));
     
-    return mean_pos, cov_pos, logml, nacc, ntotal
+    runtime = datetime.now() - starttime
+    if verbose:
+        print('elapsed time: ' + runtime.__str__())
+    
+    return mean_pos, cov_pos, logml, nacc, ntotal, runtime
 
 def Gauss2exp(mean, cov):
     Q = inv(cov)
