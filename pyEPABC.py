@@ -11,9 +11,173 @@ from numpy.linalg import slogdet, solve, cholesky, inv, LinAlgError
 from scipy.stats import norm
 from warnings import warn
 
-def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon=0.1, 
+def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon, 
               npass=2, minacc=300, samplemax=1000000, samplestep=5000, 
-              alpha=0.5, veps=1.0, doQMC=True, verbose=1, diagnostics=1):
+              alpha=1.0, veps=1.0, doQMC=True, verbose=1):
+    """
+    runs EP-ABC 
+    (likelihood-free, probabilistic inference based on expectation propagation)
+    
+    Parameters
+    ----------
+    data : 2D numpy array; N, D = shape
+        observed data where N is the number of data points and D is their 
+        dimensionality
+    simfun : function, call signature: `sims` = simfun(`parsamples`, `dind`)
+        returns simulations from model
+        
+        `parsamples` is a 2D numpy array of parameter samples (NP, P = shape 
+        where NP is the number of samples and P is the number of parameters)
+        
+        `dind` is an int scalar which indexes data and allows data 
+        point-specific simulations from the model
+        
+        `sims` is a 2D numpy array containing simulated data, there will be 
+        one simulated data point per parameter sample (NP, D = shape)
+    distfun : function, call signature: `dists` = distfun(`datapoint`, `sims`)
+        computes distances in data space
+        
+        `datapoint` is a 1D numpy array sliced from `data` (D = shape)
+        
+        `sims` is a 2D numpy array as returned from `simfun` (NP, D = shape)
+        
+        `dists` is a 1D numpy array containing computed distances between
+        `datapoint` and `sims` (NP = shape)
+    prior_mean : 1D numpy array; P = shape
+        mean of Gaussian prior over parameters
+    prior_cov : 2D numpy array; P, P = shape
+        covariance matrix of Gaussian prior over parameters
+    epsilon : float
+        maximum distance for which parameter samples will be accepted
+    npass : int, optional
+        number of passes through data before returning posterior
+    minacc : int, optional
+        number of accepted samples that needs to be reached before updating 
+        the posterior in each step
+    samplemax : int, optional
+        maximum number of samples to be generated in each step before updating 
+        the posterior even though `minacc` was not reached
+    
+    Returns
+    -------
+    mean_pos : 1D numpy array; P = shape
+        mean of Gaussian posterior over parameters
+    cov_pos : 2D numpy array; P, P = shape
+        covariance matrix of Gaussian posterior over parameters
+    logml : float
+        log marginal likelihood (aka. log model evidence)
+    nacc : 2D numpy array; `npass`, N = shape
+        number of accepted samples for each step
+    ntotal : 2D numpy array; `npass`, N = shape
+        total number of samples for each step
+        
+    Other Parameters
+    ----------------
+    samplestep : int, optional
+        size of sample batches, internally NP = `samplestep`
+    alpha : float, 0 < `alpha` <= 1, optional
+        partial update parameter for greater numerical stability, for 
+        `alpha` = 1.0 you do standard, full EP updates
+    veps : float or 1D numpy array with N = shape
+        correction term(s) for marginal likelihood
+        
+        this is the normalising constant of the uniform distribution within 
+        the region of data space in which simulated data points are accepted,
+        further info in Notes
+    doQMC : bool, optional
+        whether to use quasi-monte carlo sampling of parameters based on a 
+        Halton sequence, improves numerical stability
+    verbose : bool, optional
+        whether to print progress counter
+        
+    Raises
+    ------
+    LinAlgError
+        if covariance matrices estimated from accepted parameter samples are 
+        not positive definite
+        
+    Notes
+    -----
+    EP-ABC is defined and explained in [1]_. This is a simplified 
+    implementation that steps through each data point individually, i.e., 
+    the algorithm in [1]_ is not implemented here in its full generality. 
+    
+    The basic idea is to assume that the posterior distribution over parameters
+    factorises into one Gaussian factor per data point (this is the expectation 
+    propagation part) and that you can estimate these factors by simulating 
+    data from your model (this is the likelihood-free, or ABC part) with 
+    samples from an intermediate parameter distribution. The crucial point is 
+    to only accept samples for estimation of the factor for which the simulated
+    data was close to the corresponding observed data point. Closeness is 
+    determined by the given `distfun` and `epsilon`.
+    
+    So EP-ABC makes two approximations:
+    
+    1. factorised Gaussian posterior and 
+    2. sampling estimates of the likelihood. 
+    
+    With the parameters of this function you can tune 2. The theory states that 
+    for vanishing `epsilon` you get close to the true posterior which here 
+    means that you come close to the analytic, factorised Gaussian posterior 
+    that you could get, if you knew the likelihood of the model. However, you 
+    will also decrease the acceptance ratio, when decreasing `epsilon`. This 
+    is bad for two reasons: 
+    
+    - The algorithm will become very slow, because you will need to generate
+      millions of samples for each data point.
+    - Experience has shown that for few accepted samples EP-ABC tends to 
+      underestimate the variance of the posterior. This may become so severe 
+      that the posterior becomes very narrow around unrealistic parameter 
+      values.
+    
+    To prevent the latter from happening you should try to increase the number
+    of accepted samples (for each data point) by increasing `minacc` and 
+    `samplemax`, as necessary. The appropriate `minacc` is problem-specific. 
+    Another useful option is to use partial updates with, e.g., 
+    ``alpha = 0.5``. This prevents premature convergence, but may also just 
+    delay the unreasonable narrowing of the posterior into later passes through 
+    the data. You can also increase `epsilon` again, if the acceptance ratio is
+    very low, but you risk worse approximations of the posterior.
+    
+    Notice that distances can become very large in high-dimensional spaces. 
+    This is the curse of dimensionality and means that the acceptance ratio 
+    will heavily drop when the dimensionality increases. You can test this in 
+    the Gaussian example mentioned below. You may increase `epsilon` to 
+    increase the acceptance ratio, but beware again that the quality of the 
+    approximation may deteriorate.
+    
+    The likelihood-free setting means that the estimate of the marginal 
+    likelihood provided by the expectation propagation part needs to be 
+    corrected by `veps` (see [1]_ for details). `veps` is the normalising 
+    constant of the uniform distribution within the region of data space in 
+    which simulated data points are accepted. For Euclidean distances this is 
+    the volume of a Euclidean ball with radius `epsilon` which is
+    
+    .. math:: v_\epsilon = \epsilon^D \pi^{D/2} / \Gamma(D/2 + 1).
+    
+    It is essential for efficient sampling that the parameters are 
+    appropriately constrained. Yet, run_EPABC expects relatively unconstrained 
+    Gaussian priors for the parameters. You can, however, still implement 
+    parameter constraints inside `simfun` by appropriate transformation of 
+    parameter values. For example, you can constrain parameters to be positive 
+    by exponentiating, or you can restrict the range of parameter values by 
+    transforming through a Gaussian cumulative density function through which 
+    you can also define uniform priors over parameters. This is demonstrated in 
+    the drift diffusion model example.
+    
+    Examples
+    --------
+    There are two examples in the corresponding subdirectory demonstrating the 
+    usage of pyEPABC with a trivial Gaussian example and a more involved 
+    example using a drift diffusion model.
+    
+    References
+    ----------
+    .. [1] Barthelmé, S. & Chopin, N. Expectation-Propagation for 
+       Likelihood-Free Inference. Journal of the American Statistical 
+       Association, 2014, 109, 315-333, 
+       https://doi.org/10.1080/01621459.2013.864178
+    """
 
     # number of sites (data points) x dimensionality of data points
     N, D = data.shape
