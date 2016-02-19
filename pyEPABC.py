@@ -249,9 +249,9 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
             try:
                 cholesky(cov_c)
             except LinAlgError:
-                raise LinAlgError('Covariance of the cavity distribution' + 
+                raise LinAlgError('Covariance of the cavity distribution ' + 
                                   'for site %d ' % (dind,) + 
-                                  'is probably not positive definite' +
+                                  'is probably not positive definite ' +
                                   'in pass %d!' % (p,))
             else:
                 # allocate memory to store accepted simulations, you only need
