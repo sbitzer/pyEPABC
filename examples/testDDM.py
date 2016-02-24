@@ -5,9 +5,7 @@ Created on Mon Feb 01 17:45:29 2016
 @author: Sebastian Bitzer (sebastian.bitzer@tu-dresden.de)
 """
 
-import sys
-sys.path.append( ".." )
-
+import os.path
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -15,7 +13,7 @@ from scipy.stats import norm
 from math import log
 import matplotlib.pyplot as plt
 from pyEPABC import run_EPABC
-import testDDM_C
+from testDDM_C import sample_from_DDM
 
 # turn this off, if you're not interested
 compare_to_hddm = True
@@ -93,7 +91,7 @@ def response_dist(data, sims):
 
 if __name__ == "__main__":
     # load data
-    data = pd.read_csv('responsedata.csv')
+    data = pd.read_csv(os.path.join(os.path.dirname(__file__), 'responsedata.csv'))
     
     parnames = ['v', 'a', 'z', 't', 'st']
 
@@ -166,7 +164,7 @@ if __name__ == "__main__":
                                        np.ones((parsamples.shape[0], 1))]
 
     # wrapper to C-function for sampling from DDM
-    simfun = lambda parsamples, dind: testDDM_C.sample_from_DDM(
+    simfun = lambda parsamples, dind: sample_from_DDM(
         fillpar(paramtransform(parsamples)), dind, 
         data.values[:, 0].astype(dtype=int))
     

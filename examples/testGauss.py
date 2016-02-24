@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# estimating the mean of a Gaussian from independent data given a Gaussian 
-# prior on the mean
-import sys
-sys.path.append( ".." )
-
 import numpy as np
 from numpy.linalg import inv
 from scipy.stats import multivariate_normal as mvnorm

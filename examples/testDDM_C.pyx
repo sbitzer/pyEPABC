@@ -1,8 +1,3 @@
-# distutils: libraries = DDMsampler
-# distutils: include_dirs = .
-# distutils: library_dirs = ./Debug
-# distutils: runtime_library_dirs = ./Debug
-
 import numpy as np
 cimport numpy as np
 import datetime
@@ -15,6 +10,8 @@ def sample_from_DDM(np.ndarray[np.float_t, ndim=2, mode="c"] parsamples not None
                     int dind, np.ndarray[np.int_t, ndim=1] truetarget, 
                     double dt=0.01, double maxRT=2.5):
     """
+    sample_from_DDM(parsamples, dind, truetarget, dt=0.01, maxRT=2.5)
+    
     Cython interface to the pure C function.
     
     It makes the output ndarray and hands over the appropriate pointers to the
@@ -22,13 +19,7 @@ def sample_from_DDM(np.ndarray[np.float_t, ndim=2, mode="c"] parsamples not None
     flip the drift according to which option was the true option in the 
     stimulus.
     
-    Compile this on the command line with the associated setup.py:
-        python setup.py build_ext --inplace
-        
-    The compiler will be looking for the C includes and shared library as given
-    by the paths at the top of this file.
-        
-    Then this module ("testDDM_C") can be imported into Python as usual.
+    This module needs to be compiled before it can be used, see README.
     """
     cdef int N = parsamples.shape[0]
     cdef int P = parsamples.shape[1]

@@ -1,7 +1,9 @@
 .spyderproject
 __pycache__
-*build
+build
 examples/Debug
 examples/.project
 examples/.cproject
+examples/testDDM_C.c
 *.so
+*.pyc
