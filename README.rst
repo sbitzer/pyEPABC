@@ -55,19 +55,20 @@ the `Python Packaging User Guide`_ for further information.
 Before you can run the example you need to compile a few things. I'll only
 explain how to do this in Linux. First, compile the 'external' library which 
 will provide super-fast simulations from a DDM. Do this by opening a shell and
-navigating to the `pyEPABC_git/src` folder. There run::
+navigating to the ``pyEPABC_git/src`` folder. There run::
 
+	mkdir ../lib
 	gcc -shared -fPIC -O3 -lc -o ../lib/libDDMsampler.so DDMsampler.c brownian_motion_simulation.c
 
-which will place the resulting shared library into `pyEPABC_git/lib`. Then,
+which will place the resulting shared library into ``pyEPABC_git/lib``. Then,
 compile the Python-C-interface::
 
 	python setup.py build_ext -i
 
-which will generate another shared library `testDDM_C.xxx.so` where `xxx` will
+which will generate another shared library ``testDDM_C.xxx.so`` where ``xxx`` will
 depend on your python setup. This library can be directly imported into python
-as a module, as done in `testDDM.py`. To run the example open an ipython shell,
-navigate to the `pyEPABC_git` folder and execute::
+as a module, as done in ``testDDM.py``. To run the example open an ipython shell,
+navigate to the ``pyEPABC_git`` folder and execute::
 
 	import pyEPABC
 	run examples/testDDM
