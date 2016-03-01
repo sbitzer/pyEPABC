@@ -70,12 +70,12 @@ def plot_param_dist(samples, parnames, axlim_q=1):
     return pg
     
 
-def response_dist(data, sims):
+def response_dist(data, sims, useRT=True):
     """
     Simple distance between responses.
     
     Is infinite, if choices don't match, else it's the absolute difference 
-    in RTs.
+    in RTs, if useRT is True and it's 0, if useRT is False.
     
     data: vector with data[0]=response, data[1]=RT
     sims: array with N responses in rows, i.e., sims.shape = [N, 2]
@@ -84,7 +84,10 @@ def response_dist(data, sims):
     
     dists = np.full(sims.shape[0], np.inf)
     
-    dists[matchind] = np.abs(sims[matchind, 1] - data[1])
+    if useRT:
+        dists[matchind] = np.abs(sims[matchind, 1] - data[1])
+    else:
+        dists[matchind] = 0
     
     return dists
 
@@ -190,6 +193,23 @@ if __name__ == "__main__":
     samples_pos = pd.DataFrame(paramtransform(samples_pos), columns=parnames)
     samples_pos['distribution'] = 'epabc_pos'
     samples = samples.append(samples_pos, ignore_index=True)
+        
+    # see what happens when you ignore RTs, epco = ep choice only
+    distfun = lambda data, sims: response_dist(data, sims, useRT=False)
+    epco_mean, epco_cov, epco_logml, epco_nacc, epco_ntotal, epco_runtime = run_EPABC(
+        data.values[:, 1:], simfun, distfun, prior_mean, prior_cov, 
+        epsilon=epsilon, minacc=10000, samplestep=10000, samplemax=2000000, 
+        npass=3, alpha=0.3, veps=0.5)
+    
+    # sample from EPABC choice only posterior
+    samples_posco = np.random.multivariate_normal(epco_mean, epco_cov, N)
+    samples_posco = pd.DataFrame(paramtransform(samples_posco), columns=parnames)
+    samples_posco['distribution'] = 'epabcco_pos'
+    samples = samples.append(samples_posco, ignore_index=True)
+    
+    # compare the EP-ABC posteriors for with and without RTs
+#    pg_posco = plot_param_dist(samples[samples['distribution'].map(
+#        lambda x: x == 'epabc_pos' or x == 'epabcco_pos')], parnames)
         
     # plot the posterior(s)
     pg_pos = plot_param_dist(samples[samples['distribution'].map(
