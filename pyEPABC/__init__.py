@@ -1,3 +1,4 @@
 # -*- coding: utf-8 -*-
 
-from .pyEPABC import run_EPABC
+from .EPABC import run_EPABC
+from .PWABC import run_PWABC

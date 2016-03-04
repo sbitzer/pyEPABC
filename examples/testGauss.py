@@ -5,7 +5,7 @@ from numpy.linalg import inv
 from scipy.stats import multivariate_normal as mvnorm
 from scipy.linalg import block_diag
 from scipy.special import gamma
-from pyEPABC import run_EPABC
+from pyEPABC import run_EPABC, run_PWABC
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -96,9 +96,14 @@ if __name__ == "__main__":
     # is the volume of a Euclidean ball with radius epsilon:
     veps = np.pi ** (D/2) / gamma(D/2 + 1) * epsilon ** D;
     
-    ep_mean, ep_cov, ep_logml, nacc, ntotal, runtime = run_EPABC(data, simfun, 
+#    ep_mean, ep_cov, ep_logml, nacc, ntotal, runtime = run_EPABC(data, simfun, 
+#        distfun, prior_mean, prior_cov, epsilon=epsilon, minacc=500, 
+#        samplestep=100000, samplemax=20000000, npass=2, alpha=0.9, veps=veps, 
+#        doQMC=True)
+        
+    ep_mean, ep_cov, ep_logml, nacc, ntotal, runtime = run_PWABC(data, simfun, 
         distfun, prior_mean, prior_cov, epsilon=epsilon, minacc=500, 
-        samplestep=100000, samplemax=20000000, npass=2, alpha=0.9, veps=veps, 
+        samplestep=100000, samplemax=20000000, veps=veps, 
         doQMC=True)
         
     # plot the first two dimensions of the results
