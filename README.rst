@@ -75,6 +75,13 @@ navigate to the ``pyEPABC_git`` folder and execute::
 
 This example requires: numpy, scipy, pandas, matplotlib, seaborn, cython, hddm.
 
+
+Narrow posteriors
+-----------------
+EP-ABC sometimes produces too narrow posteriors. See
+``examples/narrow_posteriors.ipynb`` for an explanation, how to identify this
+issue and how to prevent it.
+
 .. _`Matlab implementation`: https://sites.google.com/site/simonbarthelme/software
 .. _article: https://doi.org/10.1080/01621459.2013.864178
 .. _HDDM: http://ski.clps.brown.edu/hddm_docs/

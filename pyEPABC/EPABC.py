@@ -295,7 +295,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
                 else:
                     # get mean and covariance of accepted samples
                     mean_new = np.mean(samples, axis=0)
-                    cov_new = np.cov(samples, rowvar=0)
+                    cov_new = np.cov(samples, rowvar=0, ddof=1.5)
                     
                     if nacc[p, dind] < minacc:
                         warn('The minimum number of accepted samples was not ' + 
