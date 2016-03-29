@@ -267,11 +267,14 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
                     # sample from cavity distribution
                     parsamples = mvnrand(mean_c, cov_c, S, Halton_seq)
                     
-                    # simulate from model with sampled parameters
-                    sims = simfun(parsamples, dind)
-                    
-                    # get distances between simulated and real data
-                    dists = distfun(data[dind, :], sims)
+                    if distfun is None:
+                        dists = simfun(data[dind, :], dind, parsamples)
+                    else:
+                        # simulate from model with sampled parameters
+                        sims = simfun(parsamples, dind)
+                        
+                        # get distances between simulated and real data
+                        dists = distfun(data[dind, :], sims)
                     
                     # find accepted samples
                     accind = dists < epsilon
@@ -295,7 +298,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
                 else:
                     # get mean and covariance of accepted samples
                     mean_new = np.mean(samples, axis=0)
-                    cov_new = np.cov(samples, rowvar=0, ddof=1.5)
+                    cov_new = covariance(samples, ddof=1.5)
                     
                     if nacc[p, dind] < minacc:
                         warn('The minimum number of accepted samples was not ' + 
@@ -361,6 +364,33 @@ def logZexp(r, Q):
     
     return D / 2 * math.log(2 * math.pi) - logd / 2 + np.dot(r, solve(Q, r)) / 2
     
+
+def covariance(m, ddof=1.5):
+    """
+    A simplified version of numpy's 'cov' which allows ddof=1.5 and assumes
+    variables to be in columns (rowvar=0).
+    """
+    # Handles complex arrays too
+    m = np.asarray(m)
+    dtype = np.result_type(m, np.float64)
+    
+    X = np.array(m, ndmin=2, dtype=dtype)
+    if X.shape[0] != 1:
+        X = X.T
+    if X.shape[0] == 0:
+        return np.array([]).reshape(0, 0)
+    
+    avg = np.mean(X, axis=1)
+
+    # Determine the normalization
+    fact = float(X.shape[1] - ddof)
+    if fact <= 0:
+        warn("Degrees of freedom <= 0 for slice", RuntimeWarning)
+        fact = 0.0
+
+    X -= avg[:, None]
+    X_T = X.T
+    return (np.dot(X, X_T.conj())/fact).squeeze()
     
 def mvnrand(mu, cov, S, Halton_seq=None):
     if Halton_seq is None:
