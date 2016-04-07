@@ -219,7 +219,8 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
     # initialise Halton sequence, if desired
     if doQMC:
         if verbose:
-            print('Creating Gaussian Halton sequence ... ', end='', flush=True)
+            print('Creating Gaussian Halton sequence with N = %d ' % samplestep +
+                  'and P = %d ... ' % P, end='', flush=True)
         
         # get original Halton sequence in unit-cuboid (uniform in [0,1])
         Halton_seq = create_Halton_sequence(samplestep, P)
@@ -228,7 +229,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
         Halton_seq = norm.ppf(Halton_seq)
         
         if verbose:
-            print('done.')
+            print('done.', flush=True)
     else:
         Halton_seq = None
     
