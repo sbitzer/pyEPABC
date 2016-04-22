@@ -212,9 +212,9 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
     
     # initialise diagnostic variables:
     # number of accepted samples
-    nacc = np.zeros((npass, N))
+    nacc = np.zeros((npass, N), dtype=np.int)
     # total number of samples
-    ntotal = np.zeros((npass, N))
+    ntotal = np.zeros((npass, N), dtype=np.int)
     
     # initialise Halton sequence, if desired
     if doQMC:
