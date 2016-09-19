@@ -14,7 +14,7 @@ from datetime import datetime
 
 def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon, 
               npass=2, minacc=300, samplemax=1000000, samplestep=5000, 
-              alpha=1.0, veps=1.0, doQMC=True, verbose=1):
+              alpha=1.0, veps=1.0, doQMC=False, verbose=1):
     """
     runs EP-ABC 
     (likelihood-free, probabilistic inference based on expectation propagation)
@@ -89,7 +89,12 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
         further info in Notes
     doQMC : bool, optional
         whether to use quasi-monte carlo sampling of parameters based on a 
-        Halton sequence, improves numerical stability
+        Halton sequence. Reduces variance of inferred posteriors across 
+        repeated runs of EP-ABC and makes inference a bit faster, but may 
+        introduce consistent bias into inferred posteriors. For example, it can
+        result in posteriors consistently favouring small values of a parameter
+        although the parameter has no effect on model predictions and the prior
+        was uniform (then the posterior should be uniform in the same range).
     verbose : bool, optional
         whether to print progress counter
         
