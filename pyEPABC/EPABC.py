@@ -258,7 +258,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
                 raise LinAlgError('Covariance of the cavity distribution ' + 
                                   'for site %d ' % (dind,) + 
                                   'is probably not positive definite ' +
-                                  'in pass %d!' % (p,))
+                                  'in pass %d!' % (p+1,))
             else:
                 # allocate memory to store accepted simulations, you only need
                 # minacc + samplestep elements, because the loop breaks once 
@@ -298,7 +298,7 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
                 ntotal[p, dind] = np.min([samplemax, (s+1) * samplestep])
                 
                 if nacc[p, dind] < P:
-                    warn('Skipping site %d in pass %d, ' % (dind, p) + 
+                    warn('Skipping site %d in pass %d, ' % (dind, p+1) + 
                          'because the number of accepted samples was ' + 
                          'smaller than the number of parameters.')
                 else:
