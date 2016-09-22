@@ -396,7 +396,7 @@ def covariance(m, ddof=1.5):
 
     X -= avg[:, None]
     X_T = X.T
-    return (np.dot(X, X_T.conj())/fact).squeeze()
+    return np.dot(X, X_T.conj())/fact
     
 def mvnrand(mu, cov, S, Halton_seq=None):
     if Halton_seq is None:
