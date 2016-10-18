@@ -11,6 +11,14 @@ of ``run_EPABC`` for further details.
 
 This implementation requires Python 3.
 
+Source Installation
+-------------------
+Clone the repository and use the Python setuptools to install ``pyEPABC``, e.g. in the created directory call::
+
+    python setup.py install
+
+For the DDM-example below to work, installation is a bit more complicated, see the example for further details.
+
 Examples
 --------
 
@@ -27,10 +35,10 @@ be computed analytically so that the EP-ABC estimates can be compared to that.
 
 I assume that you have downloaded (or cloned) the pyEPABC git-project into a
 folder ``pyEPABC_git``. To run this example open an ipython shell and navigate 
-to ``pyEPABC_git``. Then::
+to ``pyEPABC_git/examples``. Then::
 
 	import pyEPABC
-	run examples/testGauss
+	run testGauss
 
 You can change parameters of EP-ABC, or the problem, e.g., the dimensionality of
 the data points, in ``testGauss.py`` to investigate the behaviour of EP-ABC.
@@ -63,7 +71,7 @@ navigating to the ``pyEPABC_git/src`` folder. There run::
 which will place the resulting shared library into ``pyEPABC_git/lib``. Then,
 compile the Python-C-interface::
 
-	python setup.py build_ext -i
+	python setup.py build_ext -i -useC
 
 which will generate another shared library ``testDDM_C.xxx.so`` where ``xxx`` will
 depend on your python setup. This library can be directly imported into python
