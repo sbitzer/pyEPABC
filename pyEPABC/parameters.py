@@ -178,6 +178,9 @@ class parameter_container:
             # scatter plot in upper diagonal
             pg = pg.map_upper(plt.scatter, alpha=0.3)
             
+            # correlation of sampels in lower diagonal
+            pg = pg.map_lower(plot_corrcoef)
+            
             # fill diagonal with empty axes
             pg = pg.map_diag(lambda x, **kwargs: None)
             # plot analytical pdfs in diagonal
@@ -195,6 +198,17 @@ class parameter_container:
         
             return pg
 
+            
+def plot_corrcoef(x, y, **kwargs):
+    corrcoefs = np.corrcoef(x, y)
+    
+    ax = plt.gca()
+    ax.text(0.5, 0.5, 'R = %4.2f' % corrcoefs[0, 1], 
+            horizontalalignment='center', verticalalignment='center', 
+            transform=ax.transAxes, **kwargs)
+    
+#    ax.set_axis_off()
+            
     
 #%% some tests
 if __name__ == "__main__":
