@@ -64,9 +64,17 @@ class exponential(transform):
         
 class gaussprob(transform):
     
+    @property
+    def width(self):
+        return self._width
+        
+    @property
+    def shift(self):
+        return self._shift
+    
     def __init__(self, width=1.0, shift=0.0):
-        self.width = width
-        self.shift = shift
+        self._width = width
+        self._shift = shift
         
         self.transformed_range = np.r_[self.shift, self.width + self.shift]
         
@@ -177,7 +185,7 @@ class parameter_container:
                 xlim = par.transform.transformed_ppf(np.r_[q_lower, q_upper], 
                                                  mu[i], cov[i, i])
                 if np.any(np.isnan(xlim)):
-                    xlim = par.transform.transformed_range()
+                    xlim = par.transform.transformed_range
                     
                 x = np.linspace(xlim[0], xlim[1], 1000)
                 pg.diag_axes[i].plot(x, par.transform.transformed_pdf(x, mu[i], cov[i, i]))
@@ -186,7 +194,6 @@ class parameter_container:
 #            pg.add_legend(frameon=True)
         
             return pg
-        
 
     
 #%% some tests
