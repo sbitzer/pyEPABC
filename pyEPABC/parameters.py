@@ -105,7 +105,10 @@ class gaussprob(transform):
         if np.isscalar(q):
             q = np.array(q)
             
-        return np.full(q.shape, np.nan)
+        warn('gaussprob transform: No analytic ppf implemented. '
+             'Using numeric approximation.')
+            
+        return self.approximate_transformed_ppf(q, mu, sigma2)
 
 
 try:
@@ -218,9 +221,6 @@ class parameter_container:
             for i, par in self.params.iterrows():
                 xlim = par.transform.transformed_ppf(np.r_[q_lower, q_upper], 
                                                  mu[i], cov[i, i])
-                if np.any(np.isnan(xlim)):
-                    xlim = par.transform.approximate_transformed_ppf(
-                        np.r_[q_lower, q_upper], mu[i], cov[i, i])
                     
                 x = np.linspace(xlim[0], xlim[1], 1000)
                 pg.diag_axes[i].plot(x, par.transform.transformed_pdf(x, mu[i], cov[i, i]))
