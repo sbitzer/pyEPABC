@@ -20,7 +20,7 @@ class transform(metaclass=ABCMeta):
     """A parameter transformation."""
     
     def __init__(self, **params):
-        pass
+        self.transformed_range = None
     
     @abstractmethod
     def transform(self, x):
@@ -33,14 +33,10 @@ class transform(metaclass=ABCMeta):
     @abstractmethod
     def transformed_ppf(self, q, mu, sigma2):
         return None
-        
-    @abstractmethod
-    def transformed_range(self):
-        return None
 
 class identity(transform):
     def __init__(self):
-        pass
+        self.transformed_range = np.r_[-np.inf, np.inf]
     
     def transform(self, x):
         return x
@@ -50,14 +46,11 @@ class identity(transform):
         
     def transformed_ppf(self, q, mu, sigma2):
         return scipy.stats.norm.ppf(q, loc=mu, scale=math.sqrt(sigma2))
-        
-    def transformed_range(self):
-        return np.r_[-np.inf, np.inf]
 
 
 class exponential(transform):
     def __init__(self):
-        pass
+        self.transformed_range = np.r_[0, np.inf]
     
     def transform(self, x):
         return np.exp(x)
@@ -67,16 +60,15 @@ class exponential(transform):
         
     def transformed_ppf(self, q, mu, sigma2):
         return scipy.stats.lognorm.ppf(q, math.sqrt(sigma2), scale=math.exp(mu))
-
-    def transformed_range(self):
-        return np.r_[0, np.inf]
-
+        
         
 class gaussprob(transform):
     
     def __init__(self, width=1.0, shift=0.0):
         self.width = width
         self.shift = shift
+        
+        self.transformed_range = np.r_[self.shift, self.width + self.shift]
         
     def transform(self, x):
         return gaussprob_trans(x, self.width, self.shift)
@@ -97,9 +89,6 @@ class gaussprob(transform):
             q = np.array(q)
             
         return np.full(q.shape, np.nan)
-        
-    def transformed_range(self):
-        return np.r_[self.shift, self.width + self.shift]
 
 
 try:
@@ -145,13 +134,6 @@ class parameter_container:
         
         self.transformfun = eval("lambda self, values: np.c_[%s]" % trstr)
         
-#        trstr = ""
-#        for name in self.params.keys():
-#            trstr += "self.params['%s'][1].transform(p[:, %s])," % (name, 
-#                self.params[name][0])
-#        trstr = trstr[:-1]
-#        
-#        self.transformfun = eval("lambda self, p: np.c_[%s]" % trstr)
         
     def transform(self, values):
         return self.transformfun(self, values)
@@ -206,26 +188,26 @@ class parameter_container:
             return pg
         
 
-#%% test parameter container
-pars = parameter_container()
-pars.add_param('noisestd', 0, 1, transform=exponential())
-pars.add_param('prior', 0, 1, transform=gaussprob())
-pars.add_param('ndtmean', -5, 2)
-
-pg = pars.plot_param_dist()
-
-
-            
-            
+    
 #%% some tests
-def check_gaussprobpdf(mu=0.0, sigma=1.0):
-    g_samples = scipy.stats.norm.rvs(loc=mu, scale=sigma, size=10000)
-    p_samples = scipy.stats.norm.cdf(g_samples)
+if __name__ == "__main__":
+    # test parameter container
+    pars = parameter_container()
+    pars.add_param('noisestd', 0, 1, transform=exponential())
+    pars.add_param('prior', 0, 1, transform=gaussprob())
+    pars.add_param('ndtmean', -5, 2)
     
-    gtr = gaussprob()
+    pg = pars.plot_param_dist()
     
-    plt.figure()
-    ax = sns.distplot(p_samples)
-    lower, upper = ax.get_xlim()
-    yy = np.linspace(lower, upper, 1000)
-    ax.plot(yy, gtr.transformed_pdf(yy, mu, sigma**2))
+    # function for checking the implemented gaussprobpdf
+    def check_gaussprobpdf(mu=0.0, sigma=1.0):
+        g_samples = scipy.stats.norm.rvs(loc=mu, scale=sigma, size=10000)
+        p_samples = scipy.stats.norm.cdf(g_samples)
+        
+        gtr = gaussprob()
+        
+        plt.figure()
+        ax = sns.distplot(p_samples)
+        lower, upper = ax.get_xlim()
+        yy = np.linspace(lower, upper, 1000)
+        ax.plot(yy, gtr.transformed_pdf(yy, mu, sigma**2))
