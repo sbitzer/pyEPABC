@@ -33,6 +33,15 @@ class transform(metaclass=ABCMeta):
     @abstractmethod
     def transformed_ppf(self, q, mu, sigma2):
         return None
+        
+    def approximate_transformed_ppf(self, q, mu, sigma2):
+        if np.isscalar(q):
+            q = np.array(q)
+        
+        x = np.random.normal(mu, math.sqrt(sigma2), 1000)
+            
+        return np.percentile(self.transform(x), q * 100)
+        
 
 class identity(transform):
     def __init__(self):
@@ -210,7 +219,8 @@ class parameter_container:
                 xlim = par.transform.transformed_ppf(np.r_[q_lower, q_upper], 
                                                  mu[i], cov[i, i])
                 if np.any(np.isnan(xlim)):
-                    xlim = par.transform.transformed_range
+                    xlim = par.transform.approximate_transformed_ppf(
+                        np.r_[q_lower, q_upper], mu[i], cov[i, i])
                     
                 x = np.linspace(xlim[0], xlim[1], 1000)
                 pg.diag_axes[i].plot(x, par.transform.transformed_pdf(x, mu[i], cov[i, i]))
@@ -237,7 +247,7 @@ if __name__ == "__main__":
     # test parameter container
     pars = parameter_container()
     pars.add_param('noisestd', 0, 1, transform=exponential())
-    pars.add_param('prior', 0, 1, transform=gaussprob())
+    pars.add_param('prior', 0.8, 0.5, transform=gaussprob())
     pars.add_param('ndtmean', -5, 2)
     
     pg = pars.plot_param_dist()
