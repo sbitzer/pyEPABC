@@ -114,6 +114,10 @@ except ImportError:
 #%% define parameter container
 class parameter_container:
     
+    @property
+    def names(self):
+        return self.params.name
+    
     def __init__(self):
         self.params = pd.DataFrame(columns=('name', 'transform'))
         self.P = 0
@@ -121,7 +125,7 @@ class parameter_container:
         self.cov = np.array([[]])
 
         
-    def add_param(self, name, mu, sigma2, transform=identity()):
+    def add_param(self, name, mu, sigma, transform=identity()):
         self.params.loc[self.P] = [name, transform]
         self.P += 1
         self.generate_transformfun()
@@ -130,7 +134,7 @@ class parameter_container:
         cov = np.zeros((self.P, self.P))
         cov[:self.P-1, :self.P-1] = self.cov
         self.cov = cov
-        self.cov[-1, -1] = sigma2
+        self.cov[-1, -1] = sigma ** 2
 
 
     def generate_transformfun(self):
@@ -145,6 +149,14 @@ class parameter_container:
         
     def transform(self, values):
         return self.transformfun(self, values)
+        
+    
+    def sample(self, S):
+        return np.random.multivariate_normal(self.mu, self.cov, S)
+        
+    
+    def sample_transformed(self, S):
+        return self.transform(self.sample(S))
         
         
     def plot_param_dist(self, mu=None, cov=None, S=500, q_lower=0.005, 
