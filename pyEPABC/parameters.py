@@ -151,11 +151,21 @@ class parameter_container:
         return self.transformfun(self, values)
         
     
-    def sample(self, S):
+    def sample(self, S, mu=None, cov=None):
+        if mu is None:
+            mu = self.mu
+        if cov is None:
+            cov = self.cov
+            
         return np.random.multivariate_normal(self.mu, self.cov, S)
         
     
-    def sample_transformed(self, S):
+    def sample_transformed(self, S, mu=None, cov=None):
+        if mu is None:
+            mu = self.mu
+        if cov is None:
+            cov = self.cov
+            
         return self.transform(self.sample(S))
         
         
