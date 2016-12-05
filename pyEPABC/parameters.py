@@ -225,6 +225,13 @@ class parameter_container:
                 x = np.linspace(xlim[0], xlim[1], 1000)
                 pg.diag_axes[i].plot(x, par.transform.transformed_pdf(x, mu[i], cov[i, i]))
                 pg.diag_axes[i].set_xlim(xlim)
+                
+                # also set y-limits of off-diagonal
+                if self.P > 1:
+                    if i==0:
+                        pg.axes[0, 1].set_ylim(xlim)
+                    else:
+                        pg.axes[i, 0].set_ylim(xlim)
             
 #            pg.add_legend(frameon=True)
         
