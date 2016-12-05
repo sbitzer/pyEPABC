@@ -31,6 +31,17 @@ class transform(metaclass=ABCMeta):
         return None
     
     @abstractmethod
+    def transformed_mode(self, mu, sigma2):
+        return None
+        
+    def find_transformed_mode(self, mu, sigma2, **kwargs):
+        fun = lambda x: -self.transformed_pdf(x, mu, sigma2)
+        
+        res = scipy.optimize.minimize_scalar(fun, **kwargs)
+        
+        return res.x
+        
+    @abstractmethod
     def transformed_ppf(self, q, mu, sigma2):
         return None
         
@@ -53,6 +64,9 @@ class identity(transform):
     def transformed_pdf(self, y, mu, sigma2):
         return scipy.stats.norm.pdf(y, loc=mu, scale=math.sqrt(sigma2))
         
+    def transformed_mode(self, mu, sigma2):
+        return mu
+        
     def transformed_ppf(self, q, mu, sigma2):
         return scipy.stats.norm.ppf(q, loc=mu, scale=math.sqrt(sigma2))
 
@@ -66,6 +80,9 @@ class exponential(transform):
         
     def transformed_pdf(self, y, mu, sigma2):
         return scipy.stats.lognorm.pdf(y, math.sqrt(sigma2), scale=math.exp(mu))
+        
+    def transformed_mode(self, mu, sigma2):
+        return math.exp(mu - sigma2)
         
     def transformed_ppf(self, q, mu, sigma2):
         return scipy.stats.lognorm.ppf(q, math.sqrt(sigma2), scale=math.exp(mu))
@@ -100,6 +117,10 @@ class gaussprob(transform):
                       mu / (1 - sigma2)) ** 2 + 
                       mu**2 / (1 - sigma2) / 2 
                      ) / np.sqrt(sigma2) / self.width
+
+    def transformed_mode(self, mu, sigma2):
+        return self.find_transformed_mode(mu, sigma2, method='Bounded', 
+                                          bounds=self.transformed_range)
     
     def transformed_ppf(self, q, mu, sigma2):
         if np.isscalar(q):
@@ -181,6 +202,19 @@ class parameter_container:
         return self.transform(self.sample(S))
         
         
+    def get_transformed_mode(self, mu=None, cov=None):
+        if mu is None:
+            mu = self.mu
+        if cov is None:
+            cov = self.cov
+        
+        mode = np.full(self.P, np.nan)
+        for i, par in self.params.iterrows():
+            mode[i] = par.transform.transformed_mode(mu[i], cov[i, i])
+            
+        return mode
+        
+        
     def plot_param_dist(self, mu=None, cov=None, S=500, q_lower=0.005, 
                         q_upper=0.995, only_marginals=False, dist_names=['']):
         if mu is None:
@@ -258,6 +292,12 @@ if __name__ == "__main__":
     pars.add_param('ndtmean', -5, 2)
     
     pg = pars.plot_param_dist()
+    
+    for i, par in pars.params.iterrows():
+        mu = pars.mu[i]
+        sigma2 = pars.cov[i, i]
+        x = par.transform.transformed_mode(mu, sigma2)
+        pg.diag_axes[i].plot(x, par.transform.transformed_pdf(x, mu, sigma2), '*r')
     
     # function for checking the implemented gaussprobpdf
     def check_gaussprobpdf(mu=0.0, sigma=1.0):
