@@ -158,6 +158,17 @@ class parameter_container:
         self.cov = np.array([[]])
 
         
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['transformfun']
+        return state
+        
+        
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.generate_transformfun()
+        
+        
     def add_param(self, name, mu, sigma, transform=identity()):
         self.params.loc[self.P] = [name, transform]
         self.P += 1
