@@ -351,6 +351,63 @@ def run_EPABC(data, simfun, distfun, prior_mean, prior_cov, epsilon,
     
     return mean_pos, cov_pos, logml, nacc, ntotal, runtime
 
+    
+def estimate_predlik(data, simfun, mean, cov, epsilon, samplemax=150000, 
+                     samplestep=15000, dind=None, distfun=None):
+    """Estimates predictive log-likelihoods given a parameter distribution.
+    
+        If the given parameter distribution is a prior, you directly estimate
+        the log marginal likelihood: log p(data|model); This is not recommended
+        as you will need a huge number of samples to estimate it reliably!
+        
+        If the given parameter distribution is a posterior, you will estimate
+        log posterior predictive likelihoods: log p(data|data1, model) where
+        data1 is the data from which you estimated the posterior and data is 
+        the present data. The (log-)ppls tell you how likely the model is for
+        data after taking data1 into account. Different interpretation: the 
+        (log-)ppls are the probability density values that the model assigns
+        to the data after seeing data1.
+    """
+    if dind is None:
+        dind = np.arange(data.shape[0])
+    N = dind.size
+    
+    logpls = np.zeros(N)
+    nsamples = np.zeros(N)
+    nacc = np.zeros(N)
+    
+    # loop over requested trials
+    for i, tr in enumerate(dind):
+        # loop for simulations
+        for s in range(math.ceil(samplemax / samplestep)):
+            # determine how many samples you need to get
+            S = np.min([samplemax - s * samplestep, samplestep])
+            nsamples[i] += S
+            
+            # sample from distribution
+            parsamples = mvnrand(mean, cov, S)
+            
+            if distfun is None:
+                dists = simfun(data[tr, :], tr, parsamples)
+            else:
+                # simulate from model with sampled parameters
+                sims = simfun(parsamples, tr)
+                
+                # get distances between simulated and real data
+                dists = distfun(data[tr, :], sims)
+            
+            # find accepted samples
+            nacc[i] += np.sum(dists < epsilon)
+            
+            # break if enough accepted samples
+            if nacc[i] >= 1:
+                break
+                
+        logpls[i] = math.log(nacc[i]) - math.log(nsamples[i])
+    
+    return logpls, nsamples    
+    
+    
 def Gauss2exp(mean, cov):
     Q = inv(cov)
     
