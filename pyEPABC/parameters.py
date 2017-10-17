@@ -220,7 +220,9 @@ class parameter_container:
             cov = self.cov
         
         mode = np.full(self.P, np.nan)
-        for i, par in self.params.iterrows():
+        for par in self.params.itertuples():
+            i = par.Index
+            
             mode[i] = par.transform.transformed_mode(mu[i], cov[i, i])
             
         return mode
@@ -235,7 +237,9 @@ class parameter_container:
         
         if only_marginals:
             fig, axes = plt.subplots(1, self.P)
-            for i, par in self.params.iterrows():
+            for par in self.params.itertuples():
+                i = par.Index
+                
                 xlim = par.transform.transformed_ppf(np.r_[q_lower, q_upper], 
                                                  mu[i], cov[i, i])
                 x = np.linspace(xlim[0], xlim[1], 1000)
@@ -263,7 +267,9 @@ class parameter_container:
             # fill diagonal with empty axes
             pg = pg.map_diag(lambda x, **kwargs: None)
             # plot analytical pdfs in diagonal
-            for i, par in self.params.iterrows():
+            for par in self.params.itertuples():
+                i = par.Index
+                
                 xlim = par.transform.transformed_ppf(np.r_[q_lower, q_upper], 
                                                  mu[i], cov[i, i])
                     
