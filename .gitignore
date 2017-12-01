@@ -1,11 +1,13 @@
 .spyderproject
+.spyproject
 __pycache__
 build
+dist
 examples/Debug
 examples/.project
 examples/.cproject
 examples/testDDM_C.c
 *.so
 *.pyc
-UNKNOWN.egg-info
+*.egg-info
 .ipynb_checkpoints
