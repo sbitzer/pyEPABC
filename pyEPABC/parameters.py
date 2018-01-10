@@ -201,7 +201,7 @@ class parameter_container:
         if cov is None:
             cov = self.cov
             
-        return np.random.multivariate_normal(self.mu, self.cov, S)
+        return np.random.multivariate_normal(mu, cov, S)
         
     
     def sample_transformed(self, S, mu=None, cov=None):
@@ -210,7 +210,7 @@ class parameter_container:
         if cov is None:
             cov = self.cov
             
-        return self.transform(self.sample(S))
+        return self.transform(self.sample(S, mu, cov))
         
         
     def get_transformed_mode(self, mu=None, cov=None):
