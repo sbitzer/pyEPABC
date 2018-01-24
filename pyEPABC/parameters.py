@@ -46,8 +46,8 @@ class transform(metaclass=ABCMeta):
         return None
         
     def approximate_transformed_ppf(self, q, mu, sigma2):
-        if np.isscalar(q):
-            q = np.array(q)
+        # converts to numpy array, if necessary
+        q = np.array(q)
         
         x = np.random.normal(mu, math.sqrt(sigma2), 1000)
             
@@ -69,6 +69,33 @@ class identity(transform):
         
     def transformed_ppf(self, q, mu, sigma2):
         return scipy.stats.norm.ppf(q, loc=mu, scale=math.sqrt(sigma2))
+
+
+class absolute(transform):
+    """Takes absolute value of Gaussian, creates folden normal.
+    
+    scipy's standardised formulation uses c = mu / sigma, scale = sigma
+    """
+    
+    def __init__(self):
+        self.transformed_range = np.r_[0, np.inf]
+    
+    def transform(self, x):
+        return np.abs(x)
+        
+    def transformed_pdf(self, y, mu, sigma2):
+        sigma = math.sqrt(sigma2)
+        return scipy.stats.foldnorm.pdf(y, mu/sigma, scale=sigma)
+        
+    def transformed_mode(self, mu, sigma2):
+        sigma = math.sqrt(sigma2)
+        return scipy.optimize.minimize_scalar(
+                lambda x: -scipy.stats.foldnorm.pdf(
+                        x, mu / sigma, scale=sigma)).x
+        
+    def transformed_ppf(self, q, mu, sigma2):
+        sigma = math.sqrt(sigma2)
+        return scipy.stats.foldnorm.ppf(q, mu/sigma, scale=sigma)
 
 
 class exponential(transform):
@@ -226,6 +253,53 @@ class parameter_container:
             mode[i] = par.transform.transformed_mode(mu[i], cov[i, i])
             
         return mode
+    
+    
+    def compare_pdfs(self, mu, cov, q_lower=0.025, q_upper=0.975, 
+                     label_self='prior', label_arg='posterior', **subplots_kw):
+        """Compare pdfs of the interal and an external parameter distribution.
+        
+        Generates a figure with one subplot per parameter showing the 
+        (marginal) pdf of the parameter distribution defined by self.mu and 
+        self.cov together with another parameter distribution defined by the 
+        mu and cov arguments. Especially useful for comparing the change in 
+        parameter distribution from prior to posterior.
+        """
+        P = self.params.shape[0]
+        
+        fig, axes = plt.subplots(P // 4 + 1, min(P, 4), squeeze=False,
+                                 **subplots_kw);
+        
+        for par, ax in zip(self.params.itertuples(), axes.flatten()[:P]):
+            ind = par.Index
+            name = par.name
+            par = par.transform
+            
+            lim1 = par.transformed_ppf(np.r_[q_lower, q_upper], self.mu[ind], 
+                                       self.cov[ind, ind])
+            lim2 = par.transformed_ppf(np.r_[q_lower, q_upper], mu[ind], 
+                                       cov[ind, ind])
+            xx = np.linspace(min(lim1[0], lim2[0]), max(lim1[1], lim2[1]), 500)
+            
+            
+            ax.plot(xx, par.transformed_pdf(
+                    xx, self.mu[ind], self.cov[ind, ind]), label=label_self); 
+            ax.plot(xx, par.transformed_pdf(
+                    xx, mu[ind], cov[ind, ind]), label=label_arg); 
+            
+            ax.set_xlabel(name)
+        
+        for row in axes:
+            row[0].set_ylabel('density value')
+            
+        axes[0, 0].legend()
+        
+        for ax in axes.flatten()[P:]:
+            ax.set_visible(False)
+            
+        fig.tight_layout()
+        
+        return fig, axes
         
         
     def plot_param_dist(self, mu=None, cov=None, S=500, q_lower=0.005, 
