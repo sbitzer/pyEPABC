@@ -79,6 +79,9 @@ class absolute(transform):
     
     def __init__(self):
         self.transformed_range = np.r_[0, np.inf]
+        
+        warn('The absolute transform is not suited for inference in pyEPABC,'
+             'because it most likely results in misleading posteriors!')
     
     def transform(self, x):
         return np.abs(x)
