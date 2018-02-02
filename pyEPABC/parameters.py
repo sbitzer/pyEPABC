@@ -240,16 +240,20 @@ class parameter_container:
         self.generate_transformfun()
         
         
-    def add_param(self, name, mu, sigma, transform=identity()):
-        self.params.loc[self.P] = [name, transform]
-        self.P += 1
-        self.generate_transformfun()
+    def add_param(self, name, mu, sigma, transform=identity(), multiples=1):
+        if multiples > 1:
+            name += '_{:d}'
         
-        self.mu = np.r_[self.mu, mu]
-        cov = np.zeros((self.P, self.P))
-        cov[:self.P-1, :self.P-1] = self.cov
-        self.cov = cov
-        self.cov[-1, -1] = sigma ** 2
+        for i in range(multiples):
+            self.params.loc[self.P] = [name.format(i), transform]
+            self.P += 1
+            self.generate_transformfun()
+            
+            self.mu = np.r_[self.mu, mu]
+            cov = np.zeros((self.P, self.P))
+            cov[:self.P-1, :self.P-1] = self.cov
+            self.cov = cov
+            self.cov[-1, -1] = sigma ** 2
         
     def drop_params(self, names):
         for name in names:
