@@ -101,6 +101,47 @@ class absolute(transform):
         return scipy.stats.foldnorm.ppf(q, mu/sigma, scale=sigma)
 
 
+class zero(transform):
+    """Maps negative values to 0.
+    
+    This creates a complicated transformed distribution for which actual
+    probability mass is collected at 0. I don't currently know whether this
+    corresponds to a named distribution.
+    
+    The probability density function is simply that of the underlying Gaussian
+    distribution with negative values set to 0, but it's unclear what a 
+    pdf-value at 0 should be, if I want this to reflect the probability mass
+    collected at 0, as this is not differentiable. To be at least a bit 
+    informative the actual probability mass (not the density) is returned for 
+    0.
+    
+    The transformed mode is defined to be 0 for mu <= 0 and equal to mu else.
+    """
+    
+    def __init__(self):
+        self.transformed_range = np.r_[0, np.inf]
+        
+    def transform(self, x):
+        return np.fmax(x, 0)
+    
+    def transformed_pdf(self, y, mu, sigma2):
+        y = np.atleast_1d(y)
+        ind0 = np.flatnonzero(y == 0)
+        
+        pdf = scipy.stats.norm.pdf(y, loc=mu, scale=math.sqrt(sigma2))
+        
+        pdf[ind0] = scipy.stats.norm.cdf(0, loc=mu, scale=math.sqrt(sigma2))
+            
+        return pdf
+    
+    def transformed_mode(self, mu, sigma2):
+        return max(0, mu)
+        
+    def transformed_ppf(self, q, mu, sigma2):
+        return np.fmax(scipy.stats.norm.ppf(
+                q, loc=mu, scale=math.sqrt(sigma2)), 0)
+    
+
 class exponential(transform):
     def __init__(self):
         self.transformed_range = np.r_[0, np.inf]
@@ -209,7 +250,19 @@ class parameter_container:
         cov[:self.P-1, :self.P-1] = self.cov
         self.cov = cov
         self.cov[-1, -1] = sigma ** 2
-
+        
+    def drop_params(self, names):
+        for name in names:
+            if name in self.names.values:
+                ind = self.names[self.names == name].index[0]
+                self.params.drop(ind, inplace=True)
+                self.mu = np.delete(self.mu, ind)
+                self.cov = np.delete(np.delete(self.cov, 1, axis=0), 1, axis=1)
+                self.P -= 1
+        
+                self.params.index = np.arange(self.P)
+        
+        self.generate_transformfun()
 
     def generate_transformfun(self):
         trstr = ""
@@ -270,7 +323,7 @@ class parameter_container:
         """
         P = self.params.shape[0]
         
-        fig, axes = plt.subplots(P // 4 + 1, min(P, 4), squeeze=False,
+        fig, axes = plt.subplots((P - 1) // 4 + 1, min(P, 4), squeeze=False,
                                  **subplots_kw);
         
         for par, ax in zip(self.params.itertuples(), axes.flatten()[:P]):
