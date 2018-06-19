@@ -5,6 +5,8 @@ Created on Mon Jan 25 18:51:54 2016
 @author: Sebastian Bitzer (sebastian.bitzer@tu-dresden.de)
 """
 
+from __future__ import print_function, division
+
 import math
 import numpy as np
 from numpy.linalg import slogdet, solve, cholesky, inv, LinAlgError

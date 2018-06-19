@@ -2,6 +2,7 @@
 """
 Created on Tue Mar  1 17:57:42 2016
 """
+from __future__ import print_function, division
 
 import math
 import numpy as np

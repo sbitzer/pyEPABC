@@ -5,6 +5,8 @@ Created on Wed Sep 21 17:08:59 2016
 @author: bitzer
 """
 
+from __future__ import print_function, division
+
 import math
 import numpy as np
 import scipy
@@ -16,8 +18,10 @@ from abc import ABCMeta, abstractmethod
 
 
 #%% define transformations
-class transform(metaclass=ABCMeta):
+class transform(object):
     """A parameter transformation."""
+    
+    __metaclass__ = ABCMeta
     
     def __init__(self, **params):
         self.transformed_range = None
