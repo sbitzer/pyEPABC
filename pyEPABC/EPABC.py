@@ -378,6 +378,10 @@ def estimate_predlik(data, simfun, mean, cov, epsilon, samplemax=150000,
     
     # loop over requested trials
     for i, tr in enumerate(dind):
+        if math.floor(i / N * 100) < math.floor((i+1) / N * 100):
+            print('\rsampling: %3d%% completed' % (
+                math.floor((i+1) / N * 100)), end='', flush=True);
+        
         # loop for simulations
         for s in range(math.ceil(samplemax / samplestep)):
             # determine how many samples you need to get
@@ -404,6 +408,8 @@ def estimate_predlik(data, simfun, mean, cov, epsilon, samplemax=150000,
                 break
                 
         logpls[i] = math.log(nacc[i]) - math.log(nsamples[i])
+        
+    print('')
     
     return logpls, nsamples    
     
