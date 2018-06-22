@@ -365,7 +365,47 @@ class parameter_container:
         
         return fig, axes
         
+    
+    def plot_param_hist(self, samples, transformed=True, only_marginals=False, 
+                        **distplot_kws):
         
+        if transformed:
+            samples = self.transform(samples)
+        samples = pd.DataFrame(samples, columns=self.params.name)
+        
+        if only_marginals:
+            fig, axes = plt.subplots(1, self.P)
+            for par in self.params.itertuples():
+                i = par.Index
+                
+                sns.distplot(samples[par.name], ax=axes[i], **distplot_kws)
+                
+                axes[i].set_xlabel(par.name)
+                if i == 0:
+                    axes[i].set_ylabel('pdf')
+                    
+            return fig, axes
+        else:
+            pg = sns.PairGrid(samples, diag_sharey=False)
+            
+            # scatter plot in upper diagonal
+            pg = pg.map_upper(plt.scatter, alpha=0.3)
+            
+            # correlation of sampels in lower diagonal
+            pg = pg.map_lower(plot_corrcoef)
+            
+            # fill diagonal with empty axes
+            pg = pg.map_diag(lambda x, **kwargs: None)
+            # plot marginal histograms in diagonal
+            for par in self.params.itertuples():
+                i = par.Index
+                
+                sns.distplot(samples[par.name], ax=pg.diag_axes[i],
+                             **distplot_kws)
+        
+            return pg
+    
+    
     def plot_param_dist(self, mu=None, cov=None, S=500, q_lower=0.005, 
                         q_upper=0.995, only_marginals=False, dist_names=['']):
         if mu is None:
